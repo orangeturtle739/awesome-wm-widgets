@@ -116,7 +116,7 @@ local function worker(args)
     local last_battery_check = os.time()
     local batteryType = "battery-good-symbolic"
 
-    watch("acpi -i", 10,
+    watch("acpi -i", 1,
     function(widget, stdout, stderr, exitreason, exitcode)
         local battery_info = {}
         local capacities = {}
@@ -148,7 +148,7 @@ local function worker(args)
         charge = charge / capacity
 
         if show_current_level then
-            level_widget.text = string.format('%d%%', charge)
+            level_widget.text = string.format('%3d%%', charge)
         end
 
         if (charge >= 0 and charge < 15) then

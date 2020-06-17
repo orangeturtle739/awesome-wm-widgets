@@ -12,6 +12,7 @@ local wibox = require("wibox")
 local watch = require("awful.widget.watch")
 local spawn = require("awful.spawn")
 local beautiful = require("beautiful")
+local gears = require("gears")
 
 local PATH_TO_ICON = "/usr/share/icons/Arc/status/symbolic/display-brightness-symbolic.svg"
 local GET_BRIGHTNESS_CMD = "light -G" -- "xbacklight -get"
@@ -48,25 +49,34 @@ local function worker(args)
         bg = bg_color,
         paddings = 2,
         colors = {color},
-        widget = wibox.container.arcchart
+        widget = wibox.container.arcchart,
     }
-
-    local update_widget = function(widget, stdout)
+    local update_widget = function(stdout)
         local brightness_level = string.match(stdout, "(%d?%d?%d?)")
         brightness_level = tonumber(string.format("% 3d", brightness_level))
-
-        widget.value = brightness_level / 100;
-    end,
+        widget.value = brightness_level / 100
+    end
+    local do_update = function()
+      spawn.easy_async(get_brightness_cmd, update_widget)
+    end
+    widget.inc_brightness = function ()
+        spawn.easy_async(inc_brightness_cmd, do_update)
+    end
+    widget.dec_brightness = function ()
+        spawn.easy_async(dec_brightness_cmd, do_update)
+    end
 
     widget:connect_signal("button::press", function(_, _, _, button)
         if (button == 4) then
-            spawn(inc_brightness_cmd, false)
+            widget.inc_brightness()
         elseif (button == 5) then
-            spawn(dec_brightness_cmd, false)
+            widget.dec_brightness()
         end
     end)
-
-    watch(get_brightness_cmd, 1, update_widget, widget)
+    gears.timer.start_new(1, function()
+      do_update()
+      return true
+    end)
 
     return widget
 end
